@@ -1,39 +1,79 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BANI BAY</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BANI DAY — Diciembre 2025</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Bienvenido a BANI BAY</h1>
-    <p>Explorá nuestras creaciones, proyectos y locuras visuales</p>
-  </header>
+  <div class="wrap">
+    <header class="hero">
+      <h1>BANI DAY</h1>
+      <p>Elegí tu fecha para diciembre 2025</p>
+    </header>
 
-  <main>
-    <section class="intro">
-      <h2>¿Qué es BANI BAY?</h2>
-      <p>
-        Un espacio donde combinamos tecnología, diseño y narrativa para crear
-        experiencias únicas. Este sitio está en construcción, pero lo bueno ya empezó.
-      </p>
-    </section>
+    <main class="grid">
+      <!-- Calendario -->
+      <section class="card">
+        <h2 class="section-title">Diciembre 2025</h2>
+        <div id="calendar" class="calendar"></div>
+        <div class="legend">
+          <span class="dot selectable"></span> Seleccionable &nbsp;&nbsp;
+          <span class="dot chosen"></span> Seleccionada
+        </div>
+      </section>
 
-    <section class="links">
-      <h2>Enlaces</h2>
-      <ul>
-        <li><a href="https://www.instagram.com/" target="_blank">Instagram</a></li>
-        <li><a href="https://www.youtube.com/" target="_blank">YouTube</a></li>
-        <li><a href="https://www.granberta.com/" target="_blank">Gran Berta Films</a></li>
-      </ul>
-    </section>
-  </main>
+      <!-- Formulario -->
+      <section class="card">
+        <h2 class="section-title">Anotate</h2>
+        <form id="voteForm" class="form">
+          <label>
+            Tu nombre
+            <input type="text" id="nameInput" placeholder="Tu nombre o equipo" maxlength="60" required>
+          </label>
 
-  <footer>
-    <p>© 2025 BANI BAY. Todos los derechos reservados.</p>
-  </footer>
+          <label>
+            Fecha elegida
+            <select id="dateSelect" required>
+              <option value="">Elegí una fecha…</option>
+              <option value="2025-12-06">Sábado 6</option>
+              <option value="2025-12-13">Sábado 13</option>
+              <option value="2025-12-20">Sábado 20</option>
+            </select>
+          </label>
+
+          <button type="submit" class="btn">Confirmar</button>
+          <p id="formMsg" class="msg" role="status"></p>
+        </form>
+        <p class="hint">⚠️ Tu nombre será visible públicamente.</p>
+      </section>
+
+      <!-- Listados -->
+      <section class="card full">
+        <h2 class="section-title">Quiénes se anotaron</h2>
+        <div class="lists">
+          <div class="list">
+            <h3>Sábado 6 <span class="count" id="c-2025-12-06">0</span></h3>
+            <ul id="l-2025-12-06" class="names"></ul>
+          </div>
+          <div class="list">
+            <h3>Sábado 13 <span class="count" id="c-2025-12-13">0</span></h3>
+            <ul id="l-2025-12-13" class="names"></ul>
+          </div>
+          <div class="list">
+            <h3>Sábado 20 <span class="count" id="c-2025-12-20">0</span></h3>
+            <ul id="l-2025-12-20" class="names"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      © 2025 BANI VFX · BANI DAY
+    </footer>
+  </div>
 
   <script src="script.js"></script>
 </body>
