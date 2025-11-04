@@ -120,3 +120,14 @@ body{
 .footer{
   text-align:center;margin-top:18px;color:var(--muted);font-size:13px
 }
+.del-btn {
+  float:right;
+  background:none;
+  border:none;
+  color:#ff4e4e;
+  font-size:14px;
+  cursor:pointer;
+  margin-left:10px;
+  transition:opacity .2s;
+}
+.del-btn:hover { opacity:0.7; }

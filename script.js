@@ -5,20 +5,22 @@ const BIN_ID = "690a409fae596e708f4472ea";             // el ID del bin
 
 // Fechas habilitadas
 const PICKABLE = ["2025-12-06","2025-12-13","2025-12-20"];
-const WEEKDAYS = ["Lu","Ma","Mi","Ju","Vi","Sa","Do"]; // cabezal
-const month = 11; // 0-based => 11 = Diciembre
+const WEEKDAYS = ["Lu","Ma","Mi","Ju","Vi","Sa","Do"];
+const month = 11;
 const year  = 2025;
 
-// --- Helpers JSONBin ---
+// --- JSONBin ---
 async function loadData(){
   const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
     headers: { "X-Master-Key": JSONBIN_API_KEY }
   });
-  if(!res.ok) throw new Error("No se pudo leer JSONBin");
+  if(!res.ok) throw new Error("Error al leer JSONBin");
   const j = await res.json();
-  // Estructura esperada:
-  // { record: { votes: { "2025-12-06":[], "2025-12-13":[], "2025-12-20":[] } } }
-  return j.record?.votes ?? { "2025-12-06":[], "2025-12-13":[], "2025-12-20":[] };
+  return j.record?.votes ?? {
+    "2025-12-06":[],
+    "2025-12-13":[],
+    "2025-12-20":[]
+  };
 }
 
 async function saveData(votes){
@@ -31,39 +33,33 @@ async function saveData(votes){
     },
     body: JSON.stringify(body)
   });
-  if(!res.ok) throw new Error("No se pudo guardar en JSONBin");
+  if(!res.ok) throw new Error("Error al guardar JSONBin");
   return (await res.json()).record.votes;
 }
 
-// --- UI render: calendario ---
+// --- Render calendario ---
 function renderCalendar(){
   const $cal = document.getElementById("calendar");
   $cal.innerHTML = "";
 
-  // Cabezal
-  WEEKDAYS.forEach(d => {
+  WEEKDAYS.forEach(d=>{
     const h = document.createElement("div");
     h.className = "cal-head";
     h.textContent = d;
     $cal.appendChild(h);
   });
 
-  // Diciembre 2025
   const first = new Date(year, month, 1);
-  const last  = new Date(year, month+1, 0);
-  // GitHub Pages usa domingo como 0. Queremos que el grid empiece en Lunes.
-  // Transformamos: getDay() => 0..6 (Dom..Sáb). Queremos 0..6 (Lun..Dom)
-  const toMonStart = (d) => (d === 0 ? 6 : d - 1);
+  const last = new Date(year, month+1, 0);
+  const toMonStart = d => (d===0?6:d-1);
   const offset = toMonStart(first.getDay());
 
-  // Celdas vacías previas
   for(let i=0;i<offset;i++){
     const c = document.createElement("div");
     c.className = "cal-cell disabled";
     $cal.appendChild(c);
   }
 
-  // Días del mes
   for(let day=1; day<=last.getDate(); day++){
     const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     const c = document.createElement("div");
@@ -72,42 +68,51 @@ function renderCalendar(){
 
     if(PICKABLE.includes(dateStr)){
       c.classList.add("selectable");
-      c.addEventListener("click", () => {
-        document.querySelectorAll(".cal-cell.selectable").forEach(el => el.classList.remove("chosen"));
+      c.addEventListener("click",()=>{
+        document.querySelectorAll(".cal-cell.selectable").forEach(el=>el.classList.remove("chosen"));
         c.classList.add("chosen");
         document.getElementById("dateSelect").value = dateStr;
       });
-    }else{
-      c.classList.add("disabled");
-    }
+    }else c.classList.add("disabled");
     $cal.appendChild(c);
   }
 }
 
-// --- Listados ---
+// --- Render listas ---
 function renderLists(votes){
-  PICKABLE.forEach(d=>{
-    const ul = document.getElementById(`l-${d}`);
-    const count = document.getElementById(`c-${d}`);
+  PICKABLE.forEach(date=>{
+    const ul = document.getElementById(`l-${date}`);
+    const count = document.getElementById(`c-${date}`);
     ul.innerHTML = "";
-    const arr = votes[d] ?? [];
+    const arr = votes[date] ?? [];
     count.textContent = arr.length;
+
     arr.forEach(name=>{
       const li = document.createElement("li");
       li.textContent = name;
+
+      const del = document.createElement("button");
+      del.textContent = "✖";
+      del.className = "del-btn";
+      del.addEventListener("click", async ()=>{
+        if(!confirm(`¿Eliminar a "${name}" de ${date}?`)) return;
+        votes[date] = votes[date].filter(n=>n!==name);
+        renderLists(votes);
+        await saveData(votes).catch(()=>alert("Error al guardar en JSONBin"));
+      });
+
+      li.appendChild(del);
       ul.appendChild(li);
     });
   });
 }
 
-// --- Lógica de envío ---
-function normName(s){ return s.trim().replace(/\s+/g," "); }
+// --- Principal ---
+function norm(s){ return s.trim().replace(/\s+/g," "); }
 
 async function main(){
   renderCalendar();
-  let votes = await loadData().catch(()=>({
-    "2025-12-06":[], "2025-12-13":[], "2025-12-20":[]
-  }));
+  let votes = await loadData();
   renderLists(votes);
 
   const $form = document.getElementById("voteForm");
@@ -115,34 +120,39 @@ async function main(){
   const $date = document.getElementById("dateSelect");
   const $msg  = document.getElementById("formMsg");
 
-  $form.addEventListener("submit", async (e)=>{
+  // Recuperar nombre almacenado
+  const storedName = localStorage.getItem("bani_name");
+  if(storedName) $name.value = storedName;
+
+  $form.addEventListener("submit", async e=>{
     e.preventDefault();
-    const name = normName($name.value);
+    const name = norm($name.value);
     const date = $date.value;
 
-    if(!name || !date){ $msg.textContent = "Completá nombre y fecha."; return; }
-    if(!PICKABLE.includes(date)){ $msg.textContent = "Fecha inválida."; return; }
+    if(!name || !date){ $msg.textContent="Completá ambos campos."; return; }
+    if(!PICKABLE.includes(date)){ $msg.textContent="Fecha inválida."; return; }
 
-    // Evitar duplicados exactos en esa fecha (insensible a mayúsculas)
-    const exists = (votes[date]||[]).some(n => n.toLowerCase() === name.toLowerCase());
-    if(exists){ $msg.textContent = "Ese nombre ya está anotado en esa fecha."; return; }
+    // Guarda el nombre para reutilizar
+    localStorage.setItem("bani_name", name);
 
-    // Optimista en UI
+    // Evita duplicados (case-insensitive)
     votes[date] = votes[date] || [];
+    const dup = votes[date].some(n=>n.toLowerCase()===name.toLowerCase());
+    if(dup){ $msg.textContent="Ese nombre ya está anotado para esa fecha."; return; }
+
     votes[date].push(name);
     renderLists(votes);
-    $msg.textContent = "Guardando…";
+    $msg.textContent="Guardando…";
 
     try{
       votes = await saveData(votes);
       renderLists(votes);
-      $msg.textContent = "Listo ✅";
-      $name.value = "";
+      $msg.textContent="Anotado ✅";
+      // No limpiamos el nombre, queda en el input
     }catch(err){
-      // Revertir si falló
-      votes[date] = votes[date].filter(n=> n !== name);
+      votes[date] = votes[date].filter(n=>n!==name);
       renderLists(votes);
-      $msg.textContent = "Error al guardar. Probá de nuevo.";
+      $msg.textContent="Error al guardar.";
       console.error(err);
     }
   });
